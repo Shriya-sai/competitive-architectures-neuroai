@@ -17,6 +17,12 @@ dataset, or competitive mechanism has been selected yet. Those choices will be
 made only after the construct, controls, endpoints, and falsification criteria
 are frozen.
 
+The leading construct is now an explicit signed lateral interaction prior with
+predefined structural channel populations and emergent functional roles. The
+leading computational task is class-incremental visual learning, with average
+incremental accuracy as the provisional primary endpoint. Both remain subject
+to the Stage 0 validity and literature gates before confirmation.
+
 ## Planned experimental comparison
 
 All conditions will share the same task, data, optimizer, training budget, and

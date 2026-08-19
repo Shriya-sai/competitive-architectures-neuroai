@@ -41,7 +41,17 @@
 
 **Output:** biological-alignment result, reported independently of performance.
 
-## Stage 5 — Synthesis
+## Stage 5 — Exploration–exploitation extension
+
+- place validated encoders behind an identical policy and learning rule;
+- use nonstationary contextual-bandit or reversal-learning environments;
+- measure adaptive exploration, perseveration, switching, recommitment, reward,
+  and regret;
+- test whether representational stability–flexibility predicts behaviour.
+
+**Output:** behavioural-adaptation result that is not manufactured by the readout.
+
+## Stage 6 — Synthesis
 
 Jointly interpret four possible outcomes: computational and biological benefit,
 computational benefit only, biological alignment only, or neither.
