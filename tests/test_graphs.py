@@ -1,6 +1,7 @@
 import torch
 
 from competitive_architectures.graphs import (
+    edge_overlap_fraction,
     rewire_signed_masks,
     signed_degrees,
     structured_signed_masks,
@@ -42,3 +43,12 @@ def test_graph_generation_is_seed_reproducible() -> None:
     assert torch.equal(first.groups, second.groups)
     assert torch.equal(first.cooperative, second.cooperative)
     assert torch.equal(first.competitive, second.competitive)
+
+
+def test_more_rewiring_reduces_edge_overlap_without_changing_degree() -> None:
+    structured = structured_signed_masks(24, groups=4, seed=5)
+    light = rewire_signed_masks(structured, seed=6, swaps_per_edge=0.1)
+    heavy = rewire_signed_masks(structured, seed=6, swaps_per_edge=10)
+    light_overlap = edge_overlap_fraction(structured.cooperative, light.cooperative)
+    heavy_overlap = edge_overlap_fraction(structured.cooperative, heavy.cooperative)
+    assert light_overlap > heavy_overlap

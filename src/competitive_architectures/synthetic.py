@@ -8,6 +8,7 @@ from torch import Tensor
 
 from competitive_architectures.graphs import (
     SignedMasks,
+    edge_overlap_fraction,
     rewire_signed_masks,
     structured_signed_masks,
 )
@@ -22,6 +23,8 @@ class SyntheticLearningResult:
     final_rewired_loss: float
     structured_parameter_count: int
     rewired_parameter_count: int
+    cooperative_edge_overlap: float
+    competitive_edge_overlap: float
 
     def to_dict(self) -> dict[str, float | int]:
         return asdict(self)
@@ -35,6 +38,21 @@ class StressConditionResult:
     seeds: int
     mean_structured_loss: float
     mean_rewired_loss: float
+    mean_loss_advantage: float
+    structured_wins: int
+
+    def to_dict(self) -> dict[str, float | int]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CorrelatedMismatchResult:
+    input_correlation: float
+    swaps_per_edge: float
+    seeds: int
+    mean_edge_overlap: float
+    mean_structured_loss: float
+    mean_mismatched_loss: float
     mean_loss_advantage: float
     structured_wins: int
 
@@ -81,8 +99,12 @@ def run_synthetic_learning_experiment(
     learning_rate: float = 0.05,
     teacher_magnitude: float = 0.2,
     target_noise: float = 0.0,
+    input_correlation: float = 0.0,
+    rewiring_swaps_per_edge: float = 10.0,
 ) -> SyntheticLearningResult:
     """Recover a known signed mapping with correct and rewired topologies."""
+    if teacher_magnitude < 0:
+        raise ValueError("teacher magnitude must be nonnegative")
     generator = torch.Generator().manual_seed(seed)
     structured = structured_signed_masks(
         channels,
@@ -91,7 +113,16 @@ def run_synthetic_learning_experiment(
         competitive_degree=2,
         seed=seed,
     )
-    rewired = rewire_signed_masks(structured, seed=seed + 1)
+    if not 0 <= input_correlation < 1:
+        raise ValueError("input correlation must be in [0, 1)")
+    if rewiring_swaps_per_edge == 0:
+        rewired = structured
+    else:
+        rewired = rewire_signed_masks(
+            structured,
+            seed=seed + 1,
+            swaps_per_edge=rewiring_swaps_per_edge,
+        )
     teacher = SignedLateral(
         structured,
         cooperative_gain=float(teacher_magnitude > 0),
@@ -100,7 +131,12 @@ def run_synthetic_learning_experiment(
     )
     teacher.requires_grad_(False)
 
-    features = torch.randn(samples, channels, generator=generator)
+    independent = torch.randn(samples, channels, generator=generator)
+    group_latents = torch.randn(samples, 4, generator=generator)
+    shared = group_latents[:, structured.groups]
+    features = (
+        input_correlation**0.5 * shared + (1 - input_correlation) ** 0.5 * independent
+    )
     split = samples * 3 // 4
     with torch.no_grad():
         targets = teacher(features)
@@ -139,6 +175,14 @@ def run_synthetic_learning_experiment(
         final_rewired_loss=rewired_result[1],
         structured_parameter_count=structured_result[2],
         rewired_parameter_count=rewired_result[2],
+        cooperative_edge_overlap=edge_overlap_fraction(
+            structured.cooperative,
+            rewired.cooperative,
+        ),
+        competitive_edge_overlap=edge_overlap_fraction(
+            structured.competitive,
+            rewired.competitive,
+        ),
     )
 
 
@@ -186,4 +230,54 @@ def run_synthetic_stress_suite(
                         structured_wins=sum(advantage > 0 for advantage in advantages),
                     )
                 )
+    return summaries
+
+
+def run_correlated_mismatch_suite(
+    seeds: tuple[int, ...] = (3, 11, 19, 27, 35),
+    input_correlations: tuple[float, ...] = (0.0, 0.5, 0.9, 0.99),
+    rewiring_levels: tuple[float, ...] = (0.0, 0.1, 1.0, 10.0),
+    samples: int = 512,
+    steps: int = 250,
+) -> list[CorrelatedMismatchResult]:
+    """Test topology recovery with correlated features and graded rewiring."""
+    summaries = []
+    for correlation in input_correlations:
+        for rewiring in rewiring_levels:
+            runs = [
+                run_synthetic_learning_experiment(
+                    seed=seed,
+                    samples=samples,
+                    steps=steps,
+                    input_correlation=correlation,
+                    rewiring_swaps_per_edge=rewiring,
+                )
+                for seed in seeds
+            ]
+            structured_losses = [run.final_structured_loss for run in runs]
+            mismatched_losses = [run.final_rewired_loss for run in runs]
+            advantages = [
+                mismatched - structured
+                for structured, mismatched in zip(
+                    structured_losses,
+                    mismatched_losses,
+                    strict=True,
+                )
+            ]
+            overlaps = [
+                (run.cooperative_edge_overlap + run.competitive_edge_overlap) / 2
+                for run in runs
+            ]
+            summaries.append(
+                CorrelatedMismatchResult(
+                    input_correlation=correlation,
+                    swaps_per_edge=rewiring,
+                    seeds=len(seeds),
+                    mean_edge_overlap=mean(overlaps),
+                    mean_structured_loss=mean(structured_losses),
+                    mean_mismatched_loss=mean(mismatched_losses),
+                    mean_loss_advantage=mean(advantages),
+                    structured_wins=sum(advantage > 0 for advantage in advantages),
+                )
+            )
     return summaries

@@ -87,11 +87,11 @@ def _rewire_mask(
     mask: np.ndarray,
     forbidden: np.ndarray,
     rng: np.random.Generator,
-    swaps_per_edge: int,
+    swaps_per_edge: float,
 ) -> np.ndarray:
     edges = [tuple(edge) for edge in np.argwhere(mask > 0)]
     edge_set = set(edges)
-    required = swaps_per_edge * len(edges)
+    required = max(1, round(swaps_per_edge * len(edges)))
     accepted = 0
     attempts = 0
     max_attempts = max(100, required * 100)
@@ -135,11 +135,11 @@ def _rewire_mask(
 def rewire_signed_masks(
     masks: SignedMasks,
     seed: int,
-    swaps_per_edge: int = 10,
+    swaps_per_edge: float = 10,
 ) -> SignedMasks:
     """Randomize placement while preserving every signed in/out degree."""
     masks.validate()
-    if swaps_per_edge < 1:
+    if swaps_per_edge <= 0:
         raise ValueError("swaps_per_edge must be positive")
     rng = np.random.default_rng(seed)
     positive = masks.cooperative.cpu().numpy().astype(bool)
@@ -163,3 +163,14 @@ def rewire_signed_masks(
 def signed_degrees(mask: Tensor) -> tuple[Tensor, Tensor]:
     """Return directed in-degree and out-degree for mask[target, source]."""
     return mask.sum(dim=1), mask.sum(dim=0)
+
+
+def edge_overlap_fraction(first: Tensor, second: Tensor) -> float:
+    """Return the fraction of first-mask edges retained in the second mask."""
+    if first.shape != second.shape:
+        raise ValueError("masks must have equal shape")
+    edge_count = int((first > 0).sum())
+    if edge_count == 0:
+        return 1.0
+    shared = int(((first > 0) & (second > 0)).sum())
+    return shared / edge_count
