@@ -1,0 +1,30 @@
+{
+  "status": "frozen_before_confirmation",
+  "frozen_date": "2026-08-24",
+  "development_seed_excluded": 23,
+  "confirmation_seeds": [31, 47, 59, 71, 83, 97, 109, 127, 149, 163],
+  "dataset": "CIFAR-10 canonical train/test split",
+  "experiences": 5,
+  "classes_per_experience": 2,
+  "class_order": "seeded random permutation",
+  "shared_classifier_classes": 10,
+  "task_identity_at_test": false,
+  "epochs_per_experience": 3,
+  "train_examples_per_class": 2000,
+  "batch_size": 128,
+  "replay_examples_per_class": 200,
+  "update_composition": "half current, half replay when memory is available",
+  "augmentation": "none",
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "conditions": ["standard", "random_signed", "structured_signed"],
+  "primary_contrast": "structured_signed - random_signed",
+  "primary_outcome": "average_incremental_accuracy",
+  "secondary_outcomes": [
+    "final_average_accuracy",
+    "average_forgetting",
+    "mean_new_experience_accuracy",
+    "task_aware_final_accuracy",
+    "task_aware_forgetting"
+  ]
+}

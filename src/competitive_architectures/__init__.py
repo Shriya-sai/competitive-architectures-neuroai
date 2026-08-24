@@ -15,6 +15,7 @@ from competitive_architectures.models import (
     paired_models,
     trainable_parameter_count,
 )
+from competitive_architectures.multiseed import run_frozen_multiseed
 from competitive_architectures.synthetic import (
     CorrelatedMismatchResult,
     StressConditionResult,
@@ -40,6 +41,7 @@ __all__ = [
     "rewire_signed_masks",
     "run_cifar10_smoke",
     "run_correlated_mismatch_suite",
+    "run_frozen_multiseed",
     "run_split_cifar10_pilot",
     "run_synthetic_learning_experiment",
     "run_synthetic_stress_suite",
