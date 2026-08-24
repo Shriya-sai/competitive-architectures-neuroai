@@ -1,5 +1,6 @@
 """Competitive architectures and NeuroAI evaluation tools."""
 
+from competitive_architectures.cifar import CifarSmokeResult, run_cifar10_smoke
 from competitive_architectures.graphs import (
     SignedMasks,
     edge_overlap_fraction,
@@ -8,6 +9,11 @@ from competitive_architectures.graphs import (
     structured_signed_masks,
 )
 from competitive_architectures.lateral import SignedLateral
+from competitive_architectures.models import (
+    TinyCifarCNN,
+    paired_models,
+    trainable_parameter_count,
+)
 from competitive_architectures.synthetic import (
     CorrelatedMismatchResult,
     StressConditionResult,
@@ -20,16 +26,21 @@ from competitive_architectures.synthetic import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "CifarSmokeResult",
     "CorrelatedMismatchResult",
     "SignedLateral",
     "SignedMasks",
     "StressConditionResult",
     "SyntheticLearningResult",
+    "TinyCifarCNN",
     "edge_overlap_fraction",
+    "paired_models",
     "rewire_signed_masks",
+    "run_cifar10_smoke",
     "run_correlated_mismatch_suite",
     "run_synthetic_learning_experiment",
     "run_synthetic_stress_suite",
     "signed_degrees",
     "structured_signed_masks",
+    "trainable_parameter_count",
 ]
