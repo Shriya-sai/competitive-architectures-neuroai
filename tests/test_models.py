@@ -1,6 +1,10 @@
 import torch
 
-from competitive_architectures.lateral import SignedLateral
+from competitive_architectures.lateral import (
+    GatedSignedLateral,
+    SignedBottleneck,
+    SignedLateral,
+)
 from competitive_architectures.models import paired_models, trainable_parameter_count
 
 
@@ -45,4 +49,21 @@ def test_every_core_model_completes_a_finite_training_step() -> None:
         assert all(
             parameter.grad is None or torch.isfinite(parameter.grad).all()
             for parameter in model.parameters()
+        )
+
+
+def test_pathway_variants_preserve_random_structured_capacity_matching() -> None:
+    expected_types = {
+        "weak_residual": SignedLateral,
+        "gated_residual": GatedSignedLateral,
+        "signed_bottleneck": SignedBottleneck,
+    }
+    for pathway_mode, expected_type in expected_types.items():
+        models = paired_models(seed=17, pathway_mode=pathway_mode)
+        random_model = models["random_signed"]
+        structured_model = models["structured_signed"]
+        assert type(random_model.interaction) is expected_type
+        assert type(structured_model.interaction) is expected_type
+        assert trainable_parameter_count(random_model) == trainable_parameter_count(
+            structured_model
         )

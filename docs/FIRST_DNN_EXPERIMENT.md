@@ -77,6 +77,40 @@ non-bypassable signed bottleneck. These should first be compared on development
 seeds. A new confirmation set should be run only after one intervention passes
 the engagement gate.
 
+## Development-seed pathway screen
+
+The weak residual, a learned gated residual, and a normalized non-bypassable
+signed bottleneck were subsequently compared on development seed 23. Random
+and structured topology remained degree- and capacity-matched within every
+pathway design. This screen was diagnostic and was not a confirmatory
+performance comparison.
+
+| Pathway | Topology | Accuracy | Bypass effect | Prediction disagreement | Post/backbone cosine |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Weak residual | Random | 0.4384 | 0.0002 | 0.0052 | 0.99993 |
+| Weak residual | Structured | 0.4637 | 0.0013 | 0.0071 | 0.99990 |
+| Gated residual | Random | 0.4520 | 0.0003 | 0.0025 | 0.99997 |
+| Gated residual | Structured | 0.4626 | 0.0007 | 0.0035 | 0.99997 |
+| Signed bottleneck | Random | 0.4694 | 0.3804 | 0.9100 | 0.06995 |
+| Signed bottleneck | Structured | 0.4288 | 0.3132 | 0.9570 | 0.00425 |
+
+The learned gates remained active (0.599 for random and 0.577 for structured),
+but they scaled an interaction that was already too weak to affect decisions.
+The gated residual therefore did not solve the bypass problem.
+
+The bottleneck was the only design to establish causal pathway necessity while
+remaining trainable. Random-versus-structured post-interaction CKA fell from
+approximately 0.98--0.99 in the residual designs to 0.839 in the bottleneck.
+Its single-seed accuracy difference must not be interpreted as evidence for or
+against structured topology.
+
+The bottleneck did not yet satisfy the provisional topology-organization test:
+cooperative-edge backbone correlations were not greater than competitive-edge
+correlations in the structured condition. The next step is therefore to define
+and validate a topology-engagement measurement appropriate to a
+non-bypassable signed transformation before running additional performance
+seeds.
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -89,6 +123,12 @@ Run the seed-31 pathway diagnosis:
 
 ```bash
 PYTHONPATH=src python scripts/run_pathway_diagnosis.py
+```
+
+Run the development-seed pathway engagement screen:
+
+```bash
+PYTHONPATH=src python scripts/run_pathway_engagement_suite.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.

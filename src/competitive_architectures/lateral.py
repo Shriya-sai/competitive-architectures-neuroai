@@ -70,9 +70,47 @@ class SignedLateral(nn.Module):
     def forward(self, features: Tensor) -> Tensor:
         if features.shape[-1] != self.cooperative_mask.shape[0]:
             raise ValueError("final feature dimension does not match graph width")
+        interaction = self.signed_update(features)
+        return self.activation(features + self.residual_scale * interaction)
+
+    def signed_update(self, features: Tensor) -> Tensor:
+        """Return the cooperative-minus-competitive update without the residual."""
+        if features.shape[-1] != self.cooperative_mask.shape[0]:
+            raise ValueError("final feature dimension does not match graph width")
         cooperative = F.linear(features, self.cooperative_weights)
         competitive = F.linear(features, self.competitive_weights)
-        interaction = (
+        return (
             self.cooperative_gain * cooperative - self.competitive_gain * competitive
         )
-        return self.activation(features + self.residual_scale * interaction)
+
+
+class GatedSignedLateral(SignedLateral):
+    """Residual signed interaction with a learned, inspectable scalar gate."""
+
+    def __init__(self, *args: object, initial_gate: float = 0.5, **kwargs: object) -> None:
+        if not 0 < initial_gate < 1:
+            raise ValueError("initial gate must lie strictly between zero and one")
+        super().__init__(*args, **kwargs)
+        self.gate_logit = nn.Parameter(
+            torch.tensor(math.log(initial_gate / (1 - initial_gate)))
+        )
+
+    @property
+    def gate(self) -> Tensor:
+        return torch.sigmoid(self.gate_logit)
+
+    def forward(self, features: Tensor) -> Tensor:
+        update = self.signed_update(features)
+        return self.activation(features + self.gate * self.residual_scale * update)
+
+
+class SignedBottleneck(SignedLateral):
+    """Non-bypassable normalized signed transformation."""
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        width = self.cooperative_mask.shape[0]
+        self.normalization = nn.LayerNorm(width, elementwise_affine=False)
+
+    def forward(self, features: Tensor) -> Tensor:
+        return self.activation(self.normalization(self.signed_update(features)))

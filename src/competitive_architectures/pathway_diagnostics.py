@@ -11,8 +11,8 @@ from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
 from competitive_architectures.continual import _class_indices, _class_order, _loader
-from competitive_architectures.lateral import SignedLateral
-from competitive_architectures.models import paired_models
+from competitive_architectures.lateral import GatedSignedLateral, SignedLateral
+from competitive_architectures.models import PathwayMode, paired_models
 
 
 @dataclass(frozen=True)
@@ -34,6 +34,7 @@ class PathwayDiagnostic:
     cooperative_edge_correlation: float
     competitive_edge_correlation: float
     edge_correlation_separation: float
+    learned_gate: float | None
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -129,6 +130,11 @@ def _diagnose_model(
         edge_correlation_separation=float(
             cooperative_edge_values.mean() - competitive_edge_values.mean()
         ),
+        learned_gate=(
+            float(interaction.gate.cpu())
+            if isinstance(interaction, GatedSignedLateral)
+            else None
+        ),
     )
     return diagnostic, backbone, post
 
@@ -140,6 +146,7 @@ def run_pathway_diagnosis(
     train_examples_per_class: int = 2000,
     batch_size: int = 128,
     replay_examples_per_class: int = 200,
+    pathway_mode: PathwayMode = "weak_residual",
 ) -> dict[str, object]:
     """Retrain one frozen paired seed and causally ablate the signed pathway."""
     transform = transforms.Compose(
@@ -159,9 +166,10 @@ def run_pathway_diagnosis(
     order = _class_order(seed)
     experiences = [order[index : index + 2] for index in range(0, 10, 2)]
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-    models = paired_models(seed)
+    models = paired_models(seed, pathway_mode=pathway_mode)
 
-    for model in models.values():
+    for mode in ("random_signed", "structured_signed"):
+        model = models[mode]
         model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         memory_indices: list[int] = []
@@ -221,6 +229,7 @@ def run_pathway_diagnosis(
     return {
         "status": "exploratory_single_seed_pathway_diagnosis",
         "seed": seed,
+        "pathway_mode": pathway_mode,
         "configuration": {
             "epochs_per_experience": epochs_per_experience,
             "train_examples_per_class": train_examples_per_class,

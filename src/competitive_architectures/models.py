@@ -9,9 +9,14 @@ from competitive_architectures.graphs import (
     rewire_signed_masks,
     structured_signed_masks,
 )
-from competitive_architectures.lateral import SignedLateral
+from competitive_architectures.lateral import (
+    GatedSignedLateral,
+    SignedBottleneck,
+    SignedLateral,
+)
 
 InteractionMode = Literal["standard", "random_signed", "structured_signed"]
+PathwayMode = Literal["weak_residual", "gated_residual", "signed_bottleneck"]
 
 
 class TinyCifarCNN(nn.Module):
@@ -27,11 +32,13 @@ class TinyCifarCNN(nn.Module):
         cooperative_gain: float = 0.25,
         competitive_gain: float = 0.25,
         residual_scale: float = 0.5,
+        pathway_mode: PathwayMode = "weak_residual",
     ) -> None:
         super().__init__()
         if mode not in ("standard", "random_signed", "structured_signed"):
             raise ValueError(f"unknown interaction mode: {mode}")
         self.mode = mode
+        self.pathway_mode = pathway_mode
         self.backbone = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
             nn.BatchNorm2d(32),
@@ -58,7 +65,14 @@ class TinyCifarCNN(nn.Module):
             )
             if mode == "random_signed":
                 masks = rewire_signed_masks(masks, seed=graph_seed + 1)
-            self.interaction = SignedLateral(
+            pathway_class = {
+                "weak_residual": SignedLateral,
+                "gated_residual": GatedSignedLateral,
+                "signed_bottleneck": SignedBottleneck,
+            }.get(pathway_mode)
+            if pathway_class is None:
+                raise ValueError(f"unknown pathway mode: {pathway_mode}")
+            self.interaction = pathway_class(
                 masks,
                 cooperative_gain=cooperative_gain,
                 competitive_gain=competitive_gain,
@@ -85,10 +99,16 @@ def trainable_parameter_count(model: nn.Module) -> int:
 def paired_models(
     seed: int,
     classes: int = 10,
+    pathway_mode: PathwayMode = "weak_residual",
 ) -> dict[InteractionMode, TinyCifarCNN]:
     """Construct all core conditions with paired backbone initialization."""
     models = {}
     for mode in ("standard", "random_signed", "structured_signed"):
         torch.manual_seed(seed)
-        models[mode] = TinyCifarCNN(mode=mode, classes=classes, graph_seed=seed)
+        models[mode] = TinyCifarCNN(
+            mode=mode,
+            classes=classes,
+            graph_seed=seed,
+            pathway_mode=pathway_mode,
+        )
     return models

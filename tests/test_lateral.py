@@ -1,7 +1,11 @@
 import torch
 
 from competitive_architectures.graphs import SignedMasks, structured_signed_masks
-from competitive_architectures.lateral import SignedLateral
+from competitive_architectures.lateral import (
+    GatedSignedLateral,
+    SignedBottleneck,
+    SignedLateral,
+)
 
 
 def test_zero_gains_recover_input_and_input_gradient() -> None:
@@ -56,3 +60,24 @@ def test_only_existing_edges_own_trainable_parameters() -> None:
     layer = SignedLateral(masks)
     assert layer.cooperative_raw.numel() == int(masks.cooperative.sum())
     assert layer.competitive_raw.numel() == int(masks.competitive.sum())
+
+
+def test_gated_pathway_reports_and_uses_gate() -> None:
+    masks = structured_signed_masks(8, cooperative_degree=1, competitive_degree=1)
+    layer = GatedSignedLateral(
+        masks,
+        cooperative_gain=0.25,
+        competitive_gain=0.25,
+        initial_gate=0.4,
+    )
+    features = torch.randn(3, 8)
+    expected = features + 0.4 * layer.signed_update(features)
+    assert torch.allclose(layer.gate, torch.tensor(0.4))
+    assert torch.allclose(layer(features), expected, atol=1e-6)
+
+
+def test_bottleneck_has_no_identity_bypass() -> None:
+    masks = structured_signed_masks(8, cooperative_degree=1, competitive_degree=1)
+    layer = SignedBottleneck(masks)
+    features = torch.randn(3, 8)
+    assert torch.equal(layer(features), torch.zeros_like(features))

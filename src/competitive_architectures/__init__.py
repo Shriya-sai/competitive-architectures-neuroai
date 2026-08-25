@@ -9,7 +9,11 @@ from competitive_architectures.graphs import (
     signed_degrees,
     structured_signed_masks,
 )
-from competitive_architectures.lateral import SignedLateral
+from competitive_architectures.lateral import (
+    GatedSignedLateral,
+    SignedBottleneck,
+    SignedLateral,
+)
 from competitive_architectures.models import (
     TinyCifarCNN,
     paired_models,
@@ -31,6 +35,8 @@ __all__ = [
     "CifarSmokeResult",
     "ContinualResult",
     "CorrelatedMismatchResult",
+    "GatedSignedLateral",
+    "SignedBottleneck",
     "SignedLateral",
     "SignedMasks",
     "StressConditionResult",
