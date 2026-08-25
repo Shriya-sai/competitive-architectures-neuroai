@@ -12,16 +12,25 @@ carefully controlled computational analogue transfers to artificial networks.
 
 ## Current status
 
-The project is in **Stage 0: construct definition**. No DNN architecture,
-dataset, or competitive mechanism has been selected yet. Those choices will be
-made only after the construct, controls, endpoints, and falsification criteria
-are frozen.
+The first controlled DNN experiment is complete. A small CIFAR-10 CNN was
+tested under three capacity-matched conditions: no lateral interaction,
+degree-preserving randomly rewired signed interactions, and structured signed
+interactions. The signed mechanism passed synthetic construct-validity tests
+before entering a five-experience Split CIFAR-10 replay experiment.
 
-The leading construct is now an explicit signed lateral interaction prior with
-predefined structural channel populations and emergent functional roles. The
-leading computational task is class-incremental visual learning, with average
-incremental accuracy as the provisional primary endpoint. Both remain subject
-to the Stage 0 validity and literature gates before confirmation.
+A frozen paired confirmation across ten fresh class-order seeds found no
+reliable advantage of structured over random signed topology. The primary
+structured-minus-random difference in average incremental accuracy was 0.00066
+(95% bootstrap interval: -0.00257 to 0.00446; exact paired sign-flip
+`p = 0.764`).
+
+A subsequent causal diagnosis showed that the residual signed pathway altered
+the backbone representation by only about 1.2%. Bypassing it after training
+changed fewer than 0.7% of predictions and changed accuracy by less than 0.1
+percentage point. The current null result therefore does not distinguish
+topological irrelevance from insufficient pathway engagement. The next
+experiment must establish that the model uses the signed pathway before any
+performance comparison is interpreted.
 
 ## Planned experimental comparison
 
@@ -40,6 +49,7 @@ benefit: improved performance and improved biological alignment need not agree.
 
 - `docs/STRUCTURED_COMPETITION_CONSTRUCT.md` — foundational construct and decision gates
 - `docs/PROJECT_ROADMAP.md` — staged project plan
+- `docs/FIRST_DNN_EXPERIMENT.md` — frozen confirmation and pathway diagnosis
 - `configs/` — frozen experiment specifications
 - `src/competitive_architectures/` — reusable mechanisms and evaluation code
 - `tests/` — unit and construct-validity tests
