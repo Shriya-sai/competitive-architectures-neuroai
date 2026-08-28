@@ -34,8 +34,12 @@ matched random bottlenecks did not.
 
 That engagement did not produce a clear computational advantage. New-class
 acquisition was matched, but the structured models showed lower final retention
-and greater forgetting on average. The next analysis asks whether structured
-topology increases representational interference across sequential experiences.
+and greater forgetting on average. Experience-wise drift analysis found no
+excess global centroid movement in structured models. Instead, old classes
+consistently redistributed activity across the imposed structural groups more
+strongly, with the clearest additional decision loss appearing late in the
+sequence. This is a mechanistic signature, not yet evidence that module
+reallocation causes forgetting.
 
 ## Planned experimental comparison
 

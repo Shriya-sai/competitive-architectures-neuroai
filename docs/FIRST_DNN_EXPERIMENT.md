@@ -185,6 +185,46 @@ correlations are too small-sample for inference, but they motivate the next
 mechanistic question: **does imposed modular organization change
 representational drift and cross-experience interference?**
 
+## Experience-wise drift decomposition
+
+Representations were measured on the same held-out examples after every
+experience for both bottleneck conditions across the five exposed seeds. The
+instrument separated movement of class centroids, redistribution across
+structural groups, classifier-row movement, within-class dispersion, decision
+margin, accuracy and old--new class similarity.
+
+Mean change per experience transition was:
+
+| Diagnostic | Random | Structured | Structured minus random |
+| --- | ---: | ---: | ---: |
+| Old-class centroid cosine drift | 0.4324 | 0.4303 | -0.0021 |
+| Old-class group-profile cosine drift | 0.0047 | 0.0141 | 0.0094 |
+| Old-class classifier-row cosine drift | 0.0194 | 0.0214 | 0.0020 |
+| Old-class dispersion change | 4.4095 | 4.7365 | 0.3269 |
+| Old-class margin change | -1.0022 | -1.0568 | -0.0546 |
+| Old-class accuracy change | -0.1497 | -0.1631 | -0.0134 |
+| Old--new centroid maximum similarity | 0.6297 | 0.6114 | -0.0183 |
+
+The structured model did not exhibit greater global centroid drift, and new
+classes were not generally closer to old class centroids. Those simple
+interference accounts are therefore unsupported. The consistent difference was
+group-profile drift: structured models redistributed old-class activity across
+their imposed modules about three times as much, and the paired difference was
+positive in all five seeds.
+
+The temporal pattern was not sufficient for a causal claim. Greater group
+redistribution appeared from the second experience onward, whereas the clearest
+additional structured-model margin and accuracy losses appeared after the fifth
+experience. Group-profile drift also showed a modest negative association with
+accuracy change in both conditions. It is therefore a topology-specific
+mechanistic signature and candidate mediator, not yet a demonstrated cause of
+forgetting.
+
+The next decisive experiment should manipulate module reallocation while
+holding topology and training fixed—for example by regularizing old-class group
+profiles or selectively disrupting group assignments—and test whether the late
+retention deficit changes.
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -215,6 +255,12 @@ Run the exposed five-seed bottleneck development screen:
 
 ```bash
 PYTHONPATH=src python scripts/run_bottleneck_development_screen.py
+```
+
+Run the experience-wise drift decomposition:
+
+```bash
+PYTHONPATH=src python scripts/run_bottleneck_drift_screen.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.
