@@ -43,7 +43,9 @@ reallocation causes forgetting. A matched replay regularizer subsequently
 reduced structured group-profile drift in every development seed but did not
 improve final retention and reduced new-class acquisition on average. This
 supports a stability--plasticity trade-off rather than group drift as a
-sufficient cause of forgetting.
+sufficient cause of forgetting. Weighting protection by replay-memory
+consolidation avoided the final-accuracy cost of global freezing, but did not
+outperform the unregularized structured model.
 
 ## Planned experimental comparison
 

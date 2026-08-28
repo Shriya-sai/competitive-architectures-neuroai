@@ -4,6 +4,7 @@ from competitive_architectures.drift import (
     RepresentationSnapshot,
     _intervention_summary,
     _normalized_group_profiles,
+    _selective_summary,
     compare_snapshots,
 )
 
@@ -72,3 +73,34 @@ def test_intervention_summary_uses_within_seed_control() -> None:
     effect = summary["regularized_minus_control"]["structured_signed"]
     assert effect["mean_group_drift"]["mean_difference"] == 1
     assert effect["final_average_accuracy"]["mean_difference"] == 1
+
+
+def test_selective_summary_keeps_three_conditions_separate() -> None:
+    runs = []
+    for seed in (23, 31, 47, 59, 71):
+        for mode in ("random_signed", "structured_signed"):
+            for weight, selective, value in (
+                (0.0, False, 0.0),
+                (10.0, False, 1.0),
+                (10.0, True, 2.0),
+            ):
+                runs.append(
+                    {
+                        "seed": seed,
+                        "mode": mode,
+                        "profile_stability_weight": weight,
+                        "selective_consolidation": selective,
+                        "mean_new_experience_accuracy": value,
+                        "final_average_accuracy": value,
+                        "transitions": [
+                            {
+                                "old_group_profile_cosine_drift": value,
+                                "old_accuracy_change": value,
+                            }
+                        ],
+                    }
+                )
+    summary = _selective_summary(runs)["structured_signed"]
+    assert summary["control"]["final_average_accuracy"] == 0
+    assert summary["global"]["final_average_accuracy"] == 1
+    assert summary["selective"]["final_average_accuracy"] == 2

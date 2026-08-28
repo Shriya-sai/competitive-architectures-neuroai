@@ -260,6 +260,36 @@ can preserve aspects of old-class organization while limiting the flexibility
 needed for new learning. The next mechanism should therefore permit selective
 or context-dependent reallocation rather than globally freezing module use.
 
+## Selective consolidation
+
+A second intervention tested whether global stability was simply too blunt.
+The frozen weight-10 penalty was scaled separately for each old class by its
+classification accuracy on replay memory when first learned. This protects
+well-consolidated classes more strongly while allowing weakly acquired classes
+greater freedom to reorganize. The signal uses training memory only and does
+not require task identity at inference.
+
+Across the same five exposed seeds:
+
+| Structured outcome | Control | Global stability | Selective consolidation |
+| --- | ---: | ---: | ---: |
+| Mean group-profile drift | 0.0136 | 0.0043 | 0.0047 |
+| Old-class accuracy change | -0.1589 | -0.1485 | -0.1482 |
+| New-experience acquisition | 0.7469 | 0.7297 | 0.7319 |
+| Final average accuracy | 0.4593 | 0.4532 | 0.4592 |
+
+Selective consolidation retained most of the drift reduction and avoided the
+final-accuracy cost of global freezing. It nevertheless did not improve over
+the unregularized control: final accuracy was effectively unchanged, old-class
+protection improved in three of five seeds, and acquisition improved in only
+two of five.
+
+This rejects a second simple remedy. Class-level consolidation weighting can
+rebalance stability and plasticity, but a static protection strength still
+cannot reliably determine when reorganization is useful. Any subsequent
+routing or gating mechanism should respond to the current input or learning
+context rather than assign a fixed class-level constraint.
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -303,6 +333,12 @@ Calibrate and replicate the group-profile stability intervention:
 ```bash
 PYTHONPATH=src python scripts/calibrate_group_profile_stability.py
 PYTHONPATH=src python scripts/run_group_profile_stability_replication.py
+```
+
+Run the consolidation-weighted comparison:
+
+```bash
+PYTHONPATH=src python scripts/run_selective_consolidation_screen.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.

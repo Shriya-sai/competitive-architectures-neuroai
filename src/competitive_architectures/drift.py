@@ -149,22 +149,29 @@ def _prototype(
     train_data: datasets.CIFAR10,
     indices: list[int],
     seed: int,
-) -> Tensor:
+    label: int,
+) -> tuple[Tensor, float]:
     device = next(model.parameters()).device
     profiles = []
+    correct = 0
+    total = 0
     model.eval()
     for images, _ in _loader(Subset(train_data, indices), 128, seed, False):
         representations = model.representations(images.to(device))
+        predictions = model.classifier(representations).argmax(dim=1)
+        correct += int((predictions == label).sum())
+        total += predictions.numel()
         profiles.append(
             _normalized_group_profiles(representations, model.interaction_groups)
         )
-    return torch.cat(profiles).mean(dim=0).detach()
+    return torch.cat(profiles).mean(dim=0).detach(), correct / total
 
 
 def _train_seed(
     data_dir: str | Path,
     seed: int,
     profile_stability_weight: float = 0.0,
+    selective_consolidation: bool = False,
 ) -> list[dict[str, object]]:
     transform = transforms.Compose(
         [
@@ -186,6 +193,7 @@ def _train_seed(
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         memory_indices: list[int] = []
         frozen_profiles: dict[int, Tensor] = {}
+        consolidation_scores: dict[int, float] = {}
         previous = None
         transitions = []
         acquisition_accuracies = []
@@ -237,9 +245,19 @@ def _train_seed(
                                 for label in labels[-replay_count:].cpu().tolist()
                             ]
                         )
-                        loss = loss + profile_stability_weight * F.mse_loss(
-                            replay_profiles, targets
+                        per_sample_penalty = (replay_profiles - targets).square().mean(
+                            dim=1
                         )
+                        if selective_consolidation:
+                            sample_weights = torch.tensor(
+                                [
+                                    consolidation_scores[label]
+                                    for label in labels[-replay_count:].cpu().tolist()
+                                ],
+                                device=device,
+                            )
+                            per_sample_penalty = per_sample_penalty * sample_weights
+                        loss = loss + profile_stability_weight * per_sample_penalty.mean()
                     loss.backward()
                     optimizer.step()
             new_memory_by_class = {
@@ -253,7 +271,11 @@ def _train_seed(
             }
             for label, indices in new_memory_by_class.items():
                 memory_indices.extend(indices)
-                frozen_profiles[label] = _prototype(model, train_data, indices, seed)
+                prototype, score = _prototype(
+                    model, train_data, indices, seed, label
+                )
+                frozen_profiles[label] = prototype
+                consolidation_scores[label] = score
             current = _snapshot(model, test_data, seed)
             acquisition_accuracies.append(
                 float(np.mean([current.accuracies[label] for label in classes]))
@@ -273,6 +295,7 @@ def _train_seed(
                 "seed": seed,
                 "mode": mode,
                 "profile_stability_weight": profile_stability_weight,
+                "selective_consolidation": selective_consolidation,
                 "transitions": transitions,
                 "mean_new_experience_accuracy": float(
                     np.mean(acquisition_accuracies)
@@ -428,5 +451,78 @@ def run_profile_stability_replication(
         destination.write_text(json.dumps(payload, indent=2))
         print(f"Completed stability replication seed {seed}", flush=True)
     payload["summary"] = _intervention_summary(payload["runs"])
+    destination.write_text(json.dumps(payload, indent=2))
+    return payload
+
+
+def _selective_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    metrics = (
+        "mean_group_drift",
+        "mean_old_accuracy_change",
+        "mean_new_experience_accuracy",
+        "final_average_accuracy",
+    )
+    flattened = {}
+    for run in runs:
+        transitions = run["transitions"]
+        condition = (
+            "control"
+            if run["profile_stability_weight"] == 0
+            else "selective"
+            if run["selective_consolidation"]
+            else "global"
+        )
+        flattened[(run["seed"], run["mode"], condition)] = {
+            "mean_group_drift": float(
+                np.mean([item["old_group_profile_cosine_drift"] for item in transitions])
+            ),
+            "mean_old_accuracy_change": float(
+                np.mean([item["old_accuracy_change"] for item in transitions])
+            ),
+            "mean_new_experience_accuracy": run["mean_new_experience_accuracy"],
+            "final_average_accuracy": run["final_average_accuracy"],
+        }
+    output = {}
+    for mode in ("random_signed", "structured_signed"):
+        output[mode] = {}
+        for condition in ("control", "global", "selective"):
+            output[mode][condition] = {
+                metric: float(
+                    np.mean(
+                        [
+                            flattened[(seed, mode, condition)][metric]
+                            for seed in DEVELOPMENT_SEEDS
+                        ]
+                    )
+                )
+                for metric in metrics
+            }
+    return output
+
+
+def run_selective_consolidation_screen(
+    data_dir: str | Path,
+    output_path: str | Path,
+) -> dict[str, object]:
+    """Compare control, global stability and selective consolidation."""
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    payload: dict[str, object] = {
+        "status": "exploratory_selective_consolidation_screen",
+        "profile_stability_weight": 10.0,
+        "selection_signal": "replay-memory acquisition accuracy",
+        "seeds": list(DEVELOPMENT_SEEDS),
+        "completed_seeds": [],
+        "runs": [],
+    }
+    conditions = ((0.0, False), (10.0, False), (10.0, True))
+    for seed in DEVELOPMENT_SEEDS:
+        print(f"Starting selective-consolidation seed {seed}", flush=True)
+        for weight, selective in conditions:
+            payload["runs"].extend(_train_seed(data_dir, seed, weight, selective))
+        payload["completed_seeds"].append(seed)
+        destination.write_text(json.dumps(payload, indent=2))
+        print(f"Completed selective-consolidation seed {seed}", flush=True)
+    payload["summary"] = _selective_summary(payload["runs"])
     destination.write_text(json.dumps(payload, indent=2))
     return payload
