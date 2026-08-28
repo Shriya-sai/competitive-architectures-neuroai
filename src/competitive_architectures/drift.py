@@ -31,6 +31,17 @@ def _cosine_distance(first: Tensor, second: Tensor) -> float:
     return float((1 - F.cosine_similarity(first[None], second[None])).item())
 
 
+def _normalized_group_profiles(representations: Tensor, groups: Tensor) -> Tensor:
+    profiles = torch.stack(
+        [
+            representations[:, groups == group].abs().mean(dim=1)
+            for group in torch.unique(groups)
+        ],
+        dim=1,
+    )
+    return profiles / profiles.sum(dim=1, keepdim=True).clamp_min(1e-12)
+
+
 def compare_snapshots(
     previous: RepresentationSnapshot,
     current: RepresentationSnapshot,
@@ -132,7 +143,29 @@ def _snapshot(model: torch.nn.Module, test_data: datasets.CIFAR10, seed: int) ->
     )
 
 
-def _train_seed(data_dir: str | Path, seed: int) -> list[dict[str, object]]:
+@torch.no_grad()
+def _prototype(
+    model: torch.nn.Module,
+    train_data: datasets.CIFAR10,
+    indices: list[int],
+    seed: int,
+) -> Tensor:
+    device = next(model.parameters()).device
+    profiles = []
+    model.eval()
+    for images, _ in _loader(Subset(train_data, indices), 128, seed, False):
+        representations = model.representations(images.to(device))
+        profiles.append(
+            _normalized_group_profiles(representations, model.interaction_groups)
+        )
+    return torch.cat(profiles).mean(dim=0).detach()
+
+
+def _train_seed(
+    data_dir: str | Path,
+    seed: int,
+    profile_stability_weight: float = 0.0,
+) -> list[dict[str, object]]:
     transform = transforms.Compose(
         [
             transforms.ToTensor(),
@@ -152,8 +185,10 @@ def _train_seed(data_dir: str | Path, seed: int) -> list[dict[str, object]]:
         model = models[mode].to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         memory_indices: list[int] = []
+        frozen_profiles: dict[int, Tensor] = {}
         previous = None
         transitions = []
+        acquisition_accuracies = []
         for experience_index, classes in enumerate(experiences):
             current_indices = _class_indices(
                 train_data.targets,
@@ -181,23 +216,48 @@ def _train_seed(data_dir: str | Path, seed: int) -> list[dict[str, object]]:
                 replay_iterator = cycle(replay_batches) if replay_batches else None
                 model.train()
                 for images, labels in current_loader:
+                    replay_count = 0
                     if replay_iterator is not None:
                         replay_images, replay_labels = next(replay_iterator)
+                        replay_count = replay_labels.numel()
                         images = torch.cat((images, replay_images))
                         labels = torch.cat((labels, replay_labels))
                     optimizer.zero_grad()
-                    loss = F.cross_entropy(model(images.to(device)), labels.to(device))
+                    images = images.to(device)
+                    labels = labels.to(device)
+                    representations = model.representations(images)
+                    loss = F.cross_entropy(model.classifier(representations), labels)
+                    if profile_stability_weight and replay_count:
+                        replay_profiles = _normalized_group_profiles(
+                            representations[-replay_count:], model.interaction_groups
+                        )
+                        targets = torch.stack(
+                            [
+                                frozen_profiles[label]
+                                for label in labels[-replay_count:].cpu().tolist()
+                            ]
+                        )
+                        loss = loss + profile_stability_weight * F.mse_loss(
+                            replay_profiles, targets
+                        )
                     loss.backward()
                     optimizer.step()
-            memory_indices.extend(
-                _class_indices(
+            new_memory_by_class = {
+                label: _class_indices(
                     train_data.targets,
-                    classes,
+                    [label],
                     seed + 5000 + experience_index,
                     maximum_per_class=200,
                 )
-            )
+                for label in classes
+            }
+            for label, indices in new_memory_by_class.items():
+                memory_indices.extend(indices)
+                frozen_profiles[label] = _prototype(model, train_data, indices, seed)
             current = _snapshot(model, test_data, seed)
+            acquisition_accuracies.append(
+                float(np.mean([current.accuracies[label] for label in classes]))
+            )
             if previous is not None:
                 transition = compare_snapshots(
                     previous,
@@ -208,7 +268,20 @@ def _train_seed(data_dir: str | Path, seed: int) -> list[dict[str, object]]:
                 transition["after_experience"] = experience_index + 1
                 transitions.append(transition)
             previous = current
-        runs.append({"seed": seed, "mode": mode, "transitions": transitions})
+        runs.append(
+            {
+                "seed": seed,
+                "mode": mode,
+                "profile_stability_weight": profile_stability_weight,
+                "transitions": transitions,
+                "mean_new_experience_accuracy": float(
+                    np.mean(acquisition_accuracies)
+                ),
+                "final_average_accuracy": float(
+                    np.mean(list(previous.accuracies.values()))
+                ),
+            }
+        )
     return runs
 
 
@@ -262,5 +335,98 @@ def run_drift_screen(data_dir: str | Path, output_path: str | Path) -> dict[str,
         destination.write_text(json.dumps(payload, indent=2))
         print(f"Completed drift seed {seed}", flush=True)
     payload["summary"] = _summary(payload["runs"])
+    destination.write_text(json.dumps(payload, indent=2))
+    return payload
+
+
+def run_profile_stability_calibration(
+    data_dir: str | Path,
+    output_path: str | Path,
+    weights: tuple[float, ...] = (0.0, 1.0, 10.0),
+) -> dict[str, object]:
+    """Calibrate intervention strength on the original development seed only."""
+    payload = {
+        "status": "exploratory_profile_stability_calibration",
+        "seed": 23,
+        "weights": list(weights),
+        "runs": [],
+    }
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    for weight in weights:
+        print(f"Starting profile-stability weight {weight:g}", flush=True)
+        payload["runs"].extend(_train_seed(data_dir, 23, weight))
+        destination.write_text(json.dumps(payload, indent=2))
+        print(f"Completed profile-stability weight {weight:g}", flush=True)
+    return payload
+
+
+def _intervention_summary(runs: list[dict[str, object]]) -> dict[str, object]:
+    metrics = (
+        "mean_group_drift",
+        "mean_centroid_drift",
+        "mean_margin_change",
+        "mean_old_accuracy_change",
+        "mean_new_experience_accuracy",
+        "final_average_accuracy",
+    )
+    flattened = {}
+    for run in runs:
+        transitions = run["transitions"]
+        flattened[(run["seed"], run["mode"], run["profile_stability_weight"])] = {
+            "mean_group_drift": float(
+                np.mean([item["old_group_profile_cosine_drift"] for item in transitions])
+            ),
+            "mean_centroid_drift": float(
+                np.mean([item["old_centroid_cosine_drift"] for item in transitions])
+            ),
+            "mean_margin_change": float(
+                np.mean([item["old_margin_change"] for item in transitions])
+            ),
+            "mean_old_accuracy_change": float(
+                np.mean([item["old_accuracy_change"] for item in transitions])
+            ),
+            "mean_new_experience_accuracy": run["mean_new_experience_accuracy"],
+            "final_average_accuracy": run["final_average_accuracy"],
+        }
+    effects = {}
+    for mode in ("random_signed", "structured_signed"):
+        effects[mode] = {}
+        for metric in metrics:
+            differences = [
+                flattened[(seed, mode, 10.0)][metric]
+                - flattened[(seed, mode, 0.0)][metric]
+                for seed in DEVELOPMENT_SEEDS
+            ]
+            effects[mode][metric] = {
+                "paired_differences": differences,
+                "mean_difference": float(np.mean(differences)),
+            }
+    return {"regularized_minus_control": effects}
+
+
+def run_profile_stability_replication(
+    data_dir: str | Path,
+    output_path: str | Path,
+) -> dict[str, object]:
+    """Replicate frozen weight 10 against control on five exposed seeds."""
+    destination = Path(output_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    payload: dict[str, object] = {
+        "status": "exploratory_profile_stability_causal_replication",
+        "selection_rule": "drift reduction with acquisition preservation",
+        "selected_weight": 10.0,
+        "seeds": list(DEVELOPMENT_SEEDS),
+        "completed_seeds": [],
+        "runs": [],
+    }
+    for seed in DEVELOPMENT_SEEDS:
+        print(f"Starting stability replication seed {seed}", flush=True)
+        for weight in (0.0, 10.0):
+            payload["runs"].extend(_train_seed(data_dir, seed, weight))
+        payload["completed_seeds"].append(seed)
+        destination.write_text(json.dumps(payload, indent=2))
+        print(f"Completed stability replication seed {seed}", flush=True)
+    payload["summary"] = _intervention_summary(payload["runs"])
     destination.write_text(json.dumps(payload, indent=2))
     return payload

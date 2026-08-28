@@ -225,6 +225,41 @@ holding topology and training fixed—for example by regularizing old-class grou
 profiles or selectively disrupting group assignments—and test whether the late
 retention deficit changes.
 
+## Causal group-profile stability intervention
+
+To manipulate the candidate mediator directly, each old class's normalized
+four-group activation profile was frozen when that class entered replay memory.
+During later replay updates, a matched mean-squared penalty discouraged the
+current profile from leaving that reference. The identical intervention was
+applied to random and structured bottlenecks.
+
+Penalty strength was selected on development seed 23 using only two gates:
+reduce group-profile drift and preserve new-class acquisition. Final retention
+was not a selection criterion. Weight 10 reduced structured drift by more than
+half while preserving acquisition on the calibration seed, and was frozen for
+the five-seed replication.
+
+The intervention successfully changed its target in every structured seed:
+
+| Structured outcome | Control | Stability penalty | Penalty minus control |
+| --- | ---: | ---: | ---: |
+| Mean group-profile drift | 0.0136 | 0.0043 | -0.0093 |
+| Old-class accuracy change per transition | -0.1589 | -0.1491 | 0.0098 |
+| New-experience acquisition | 0.7469 | 0.7313 | -0.0156 |
+| Final average accuracy | 0.4593 | 0.4524 | -0.0069 |
+
+Thus, reducing module reallocation did not rescue final retention. It produced
+a small and inconsistent improvement in old-class transition accuracy while
+reducing acquisition on average; final accuracy was slightly lower. The random
+control also showed strong drift reduction without a final-accuracy benefit.
+
+This intervention provides evidence against the claim that group-profile drift
+is by itself the cause of forgetting. Instead, module reallocation appears to
+be one component of a broader stability--plasticity trade-off: constraining it
+can preserve aspects of old-class organization while limiting the flexibility
+needed for new learning. The next mechanism should therefore permit selective
+or context-dependent reallocation rather than globally freezing module use.
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -261,6 +296,13 @@ Run the experience-wise drift decomposition:
 
 ```bash
 PYTHONPATH=src python scripts/run_bottleneck_drift_screen.py
+```
+
+Calibrate and replicate the group-profile stability intervention:
+
+```bash
+PYTHONPATH=src python scripts/calibrate_group_profile_stability.py
+PYTHONPATH=src python scripts/run_group_profile_stability_replication.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.

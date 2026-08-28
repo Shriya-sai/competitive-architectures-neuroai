@@ -39,7 +39,11 @@ excess global centroid movement in structured models. Instead, old classes
 consistently redistributed activity across the imposed structural groups more
 strongly, with the clearest additional decision loss appearing late in the
 sequence. This is a mechanistic signature, not yet evidence that module
-reallocation causes forgetting.
+reallocation causes forgetting. A matched replay regularizer subsequently
+reduced structured group-profile drift in every development seed but did not
+improve final retention and reduced new-class acquisition on average. This
+supports a stability--plasticity trade-off rather than group drift as a
+sufficient cause of forgetting.
 
 ## Planned experimental comparison
 
