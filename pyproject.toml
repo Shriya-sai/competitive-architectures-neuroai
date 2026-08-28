@@ -6,6 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "competitive-architectures-neuroai"
 version = "0.1.0"
 description = "Controlled NeuroAI experiments on cooperative-competitive architectures"
+authors = [{ name = "Shriya Sai" }]
+license = { file = "LICENSE" }
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -19,6 +21,10 @@ dev = [
   "pytest>=8.0",
   "ruff>=0.9",
 ]
+
+[project.urls]
+Repository = "https://github.com/Shriya-sai/competitive-architectures-neuroai"
+Issues = "https://github.com/Shriya-sai/competitive-architectures-neuroai/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

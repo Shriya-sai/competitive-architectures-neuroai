@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite this repository."
+title: "Competitive Architectures for Brain-Inspired Deep Learning"
+type: software
+authors:
+  - given-names: Shriya
+    family-names: Sai
+repository-code: "https://github.com/Shriya-sai/competitive-architectures-neuroai"
+url: "https://github.com/Shriya-sai/competitive-architectures-neuroai"
+version: 0.1.0
+date-released: 2026-08-28
+license: MIT

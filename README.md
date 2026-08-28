@@ -73,4 +73,9 @@ python -m pip install -e '.[dev]'
 pytest
 ```
 
-The repository is private during development.
+## Licence
+
+Project-authored code is released under the [MIT License](LICENSE). CIFAR-10,
+PyTorch and other dependencies retain their own licences and attribution
+requirements. Generated datasets, checkpoints and result files are not
+distributed in this repository.

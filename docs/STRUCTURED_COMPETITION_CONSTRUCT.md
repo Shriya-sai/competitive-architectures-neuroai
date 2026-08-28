@@ -1,5 +1,9 @@
 # Structured Competition: Construct Specification
 
+> Historical design record: this specification was written before the first
+> DNN experiment. Stage 0 and the initial confirmation have since been
+> completed. See `FIRST_DNN_EXPERIMENT.md` for results, failures and revisions.
+
 ## Scientific question
 
 Can structured cooperative–competitive interactions inspired by biological
