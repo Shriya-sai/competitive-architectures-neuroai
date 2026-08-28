@@ -28,6 +28,7 @@ from competitive_architectures.synthetic import (
     run_synthetic_learning_experiment,
     run_synthetic_stress_suite,
 )
+from competitive_architectures.topology import TopologyAlignment, topology_alignment
 
 __version__ = "0.1.0"
 
@@ -42,6 +43,7 @@ __all__ = [
     "StressConditionResult",
     "SyntheticLearningResult",
     "TinyCifarCNN",
+    "TopologyAlignment",
     "edge_overlap_fraction",
     "paired_models",
     "rewire_signed_masks",
@@ -53,5 +55,6 @@ __all__ = [
     "run_synthetic_stress_suite",
     "signed_degrees",
     "structured_signed_masks",
+    "topology_alignment",
     "trainable_parameter_count",
 ]

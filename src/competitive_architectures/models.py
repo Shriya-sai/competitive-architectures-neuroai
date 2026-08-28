@@ -65,6 +65,7 @@ class TinyCifarCNN(nn.Module):
             )
             if mode == "random_signed":
                 masks = rewire_signed_masks(masks, seed=graph_seed + 1)
+            self.register_buffer("interaction_groups", masks.groups.clone())
             pathway_class = {
                 "weak_residual": SignedLateral,
                 "gated_residual": GatedSignedLateral,

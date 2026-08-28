@@ -111,6 +111,41 @@ and validate a topology-engagement measurement appropriate to a
 non-bypassable signed transformation before running additional performance
 seeds.
 
+## Class-tuning topology diagnosis
+
+The initial correlation test compared raw activations and did not directly ask
+whether connected channels represented similar or opposing class information.
+A new instrument therefore computed each channel's centered class-tuning
+profile and measured two preregisterable quantities:
+
+- signed-edge tuning gap: cooperative-edge similarity minus
+  competitive-edge similarity;
+- group tuning gap: within-structural-group similarity minus between-group
+  similarity.
+
+Synthetic unit tests verified that both scores recover known group-organized
+class tuning and remain near zero for unorganized features. Applied to the
+development-seed bottleneck models, the results were:
+
+| Representation | Topology | Signed-edge gap | Group gap |
+| --- | --- | ---: | ---: |
+| Backbone | Random | 0.091 | -0.029 |
+| Backbone | Structured | 0.025 | 0.004 |
+| Post-bottleneck | Random | 0.013 | -0.005 |
+| Post-bottleneck | Structured | 0.659 | 0.240 |
+
+The structured bottleneck therefore imposes a functionally expressed
+cooperative--competitive organization on its output: cooperative edges link
+channels with similar class tuning, competitive edges link channels with
+opposing tuning, and the predefined groups become internally more coherent.
+The matched random bottleneck does not show the same organization.
+
+The absence of comparable alignment in the structured backbone is equally
+important. This is evidence for **architecturally imposed topology engagement**,
+not evidence that the upstream CNN learned or spontaneously discovered the
+predefined modules. Replication across development seeds is required before
+freezing a new performance confirmation.
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -129,6 +164,12 @@ Run the development-seed pathway engagement screen:
 
 ```bash
 PYTHONPATH=src python scripts/run_pathway_engagement_suite.py
+```
+
+Run the bottleneck class-tuning topology diagnosis:
+
+```bash
+PYTHONPATH=src python scripts/run_bottleneck_topology_diagnosis.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.

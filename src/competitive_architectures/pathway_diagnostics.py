@@ -13,6 +13,7 @@ from torchvision import datasets, transforms
 from competitive_architectures.continual import _class_indices, _class_order, _loader
 from competitive_architectures.lateral import GatedSignedLateral, SignedLateral
 from competitive_architectures.models import PathwayMode, paired_models
+from competitive_architectures.topology import topology_alignment
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,8 @@ class PathwayDiagnostic:
     competitive_edge_correlation: float
     edge_correlation_separation: float
     learned_gate: float | None
+    backbone_topology_alignment: dict[str, float]
+    post_topology_alignment: dict[str, float]
 
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
@@ -135,6 +138,21 @@ def _diagnose_model(
             if isinstance(interaction, GatedSignedLateral)
             else None
         ),
+        backbone_topology_alignment=topology_alignment(
+            backbone,
+            labels,
+            interaction.cooperative_mask.cpu(),
+            interaction.competitive_mask.cpu(),
+            # Graph construction preserves group labels in both controls.
+            model.interaction_groups.cpu(),
+        ).to_dict(),
+        post_topology_alignment=topology_alignment(
+            post,
+            labels,
+            interaction.cooperative_mask.cpu(),
+            interaction.competitive_mask.cpu(),
+            model.interaction_groups.cpu(),
+        ).to_dict(),
     )
     return diagnostic, backbone, post
 
