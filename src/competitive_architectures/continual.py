@@ -10,7 +10,11 @@ from torch import nn
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 
-from competitive_architectures.models import paired_models, trainable_parameter_count
+from competitive_architectures.models import (
+    PathwayMode,
+    paired_models,
+    trainable_parameter_count,
+)
 
 
 @dataclass(frozen=True)
@@ -132,6 +136,7 @@ def run_split_cifar10_pilot(
     train_examples_per_class: int = 2000,
     batch_size: int = 128,
     replay_examples_per_class: int = 0,
+    pathway_mode: PathwayMode = "weak_residual",
 ) -> list[ContinualResult]:
     """Run one paired five-experience Class-IL development sequence."""
     transform = transforms.Compose(
@@ -151,7 +156,7 @@ def run_split_cifar10_pilot(
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     results = []
 
-    for mode, model in paired_models(seed).items():
+    for mode, model in paired_models(seed, pathway_mode=pathway_mode).items():
         model = model.to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
         loss_fn = nn.CrossEntropyLoss()

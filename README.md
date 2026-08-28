@@ -27,10 +27,15 @@ structured-minus-random difference in average incremental accuracy was 0.00066
 A subsequent causal diagnosis showed that the residual signed pathway altered
 the backbone representation by only about 1.2%. Bypassing it after training
 changed fewer than 0.7% of predictions and changed accuracy by less than 0.1
-percentage point. The current null result therefore does not distinguish
-topological irrelevance from insufficient pathway engagement. The next
-experiment must establish that the model uses the signed pathway before any
-performance comparison is interpreted.
+percentage point. A non-bypassable signed bottleneck corrected this measurement
+failure. Across five exploratory development seeds, structured bottlenecks
+reliably expressed cooperative--competitive class-tuning organization, whereas
+matched random bottlenecks did not.
+
+That engagement did not produce a clear computational advantage. New-class
+acquisition was matched, but the structured models showed lower final retention
+and greater forgetting on average. The next analysis asks whether structured
+topology increases representational interference across sequential experiences.
 
 ## Planned experimental comparison
 

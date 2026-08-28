@@ -146,6 +146,45 @@ not evidence that the upstream CNN learned or spontaneously discovered the
 predefined modules. Replication across development seeds is required before
 freezing a new performance confirmation.
 
+## Five-seed development replication
+
+The bottleneck diagnosis was repeated across five exposed development seeds
+(23, 31, 47, 59, and 71). These seeds are not eligible for a later confirmation.
+Topology engagement replicated in every structured model:
+
+| Measure | Structured mean | Structured minimum | Random mean |
+| --- | ---: | ---: | ---: |
+| Post-bottleneck signed-edge tuning gap | 0.626 | 0.532 | 0.001 |
+| Post-bottleneck group tuning gap | 0.290 | 0.216 | 0.000 |
+
+Pathway necessity also remained strong. Bypassing the bottleneck changed 93.6%
+of structured-model predictions and reduced accuracy by 32.0 percentage points
+on average.
+
+The computational outcomes did not show a general structured-topology benefit:
+
+| Outcome | Random mean | Structured mean | Structured minus random |
+| --- | ---: | ---: | ---: |
+| Average incremental accuracy | 0.5937 | 0.5960 | 0.0023 |
+| Final average accuracy | 0.4782 | 0.4325 | -0.0457 |
+| Average forgetting | 0.3134 | 0.3727 | 0.0592 |
+| New-experience acquisition | 0.7282 | 0.7279 | -0.0003 |
+| Task-aware final accuracy | 0.8463 | 0.8264 | -0.0199 |
+
+The near-identical acquisition scores argue against a simple failure to learn
+new classes. The exploratory pattern instead suggests that strongly organized
+signed representations may be more vulnerable to interference or less able to
+preserve earlier class boundaries during sequential learning. With only five
+exposed seeds, these values are hypothesis-generating and are not a
+confirmatory estimate.
+
+Within the structured condition, stronger group tuning alignment was
+negatively associated with average incremental accuracy (exploratory Spearman
+rho = -0.60), while the edge-gap association was weak (rho = 0.10). These
+correlations are too small-sample for inference, but they motivate the next
+mechanistic question: **does imposed modular organization change
+representational drift and cross-experience interference?**
+
 ## Reproduction
 
 Run the frozen confirmation:
@@ -170,6 +209,12 @@ Run the bottleneck class-tuning topology diagnosis:
 
 ```bash
 PYTHONPATH=src python scripts/run_bottleneck_topology_diagnosis.py
+```
+
+Run the exposed five-seed bottleneck development screen:
+
+```bash
+PYTHONPATH=src python scripts/run_bottleneck_development_screen.py
 ```
 
 Generated result JSON files are intentionally excluded from version control.
