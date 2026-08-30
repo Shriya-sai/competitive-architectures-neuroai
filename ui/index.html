@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive atlas of structured cooperative-competitive DNN experiments.">
+  <title>Competitive Architectures · Experiment Atlas</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div><p class="eyebrow">Competitive Architectures</p><h1>Experiment Atlas</h1></div>
+      <div class="status"><i></i><span>Frozen results loaded</span></div>
+    </header>
+
+    <nav class="tabs" aria-label="Atlas views">
+      <button class="tab active" data-view="architecture">Architecture</button>
+      <button class="tab" data-view="learning">Continual learning</button>
+      <button class="tab" data-view="mechanism">Mechanism</button>
+    </nav>
+
+    <section id="architecture" class="view active">
+      <aside class="control-panel">
+        <p class="section-label">Interaction condition</p>
+        <div id="mode-picker" class="segmented"></div>
+        <div class="explain" id="architecture-copy"></div>
+        <dl class="metrics architecture-metrics">
+          <div><dt>Channels</dt><dd>64</dd></div>
+          <div><dt>Structural groups</dt><dd>4</dd></div>
+          <div><dt>Cooperative degree</dt><dd id="coop-degree">—</dd></div>
+          <div><dt>Competitive degree</dt><dd id="comp-degree">—</dd></div>
+        </dl>
+        <div class="legend">
+          <span><i class="coop"></i> cooperative edge</span>
+          <span><i class="comp"></i> competitive edge</span>
+          <span><i class="node"></i> representation channel</span>
+        </div>
+      </aside>
+      <section class="network-stage">
+        <canvas id="network" aria-label="Signed representation interaction graph"></canvas>
+        <div class="network-caption"><span id="network-label"></span><span>mask[target, source]</span></div>
+      </section>
+    </section>
+
+    <section id="learning" class="view">
+      <div class="learning-controls">
+        <label>Confirmation seed<select id="seed"></select></label>
+        <label>Architecture<select id="learning-mode"></select></label>
+        <label class="experience-control">After experience <output id="experience-value">5</output><input id="experience" type="range" min="1" max="5" value="5"></label>
+        <span class="evidence confirmatory">confirmatory · n=10 paired seeds</span>
+      </div>
+      <div class="learning-grid">
+        <section class="memory-panel">
+          <div class="panel-heading"><h2>Class memory</h2><span id="class-order"></span></div>
+          <div id="experience-board"></div>
+        </section>
+        <aside class="score-panel">
+          <p class="section-label">Selected run</p>
+          <dl class="metrics" id="run-metrics"></dl>
+          <div class="verdict" id="run-verdict"></div>
+        </aside>
+      </div>
+      <section class="confirmation-strip">
+        <div><span>Primary contrast</span><strong id="primary-difference"></strong></div>
+        <div><span>95% paired bootstrap interval</span><strong id="primary-ci"></strong></div>
+        <div><span>Exact sign-flip p</span><strong id="primary-p"></strong></div>
+        <p>The frozen confirmation found no reliable structured-topology advantage.</p>
+      </section>
+    </section>
+
+    <section id="mechanism" class="view">
+      <div class="mechanism-header">
+        <div><p class="section-label">What changed internally?</p><h2>Engagement → drift → intervention</h2></div>
+        <span class="evidence exploratory">exploratory · 5 exposed seeds</span>
+      </div>
+      <div class="mechanism-flow">
+        <article class="mechanism-card" data-step="1">
+          <span class="step">01</span><h3>Force pathway engagement</h3>
+          <p>A signed bottleneck prevents the classifier from bypassing the interaction layer.</p>
+          <div class="comparison" id="engagement-comparison"></div>
+        </article>
+        <article class="mechanism-card" data-step="2">
+          <span class="step">02</span><h3>Locate the difference</h3>
+          <p>Global centroid movement was similar. Redistribution across imposed groups was not.</p>
+          <div class="transition-grid" id="drift-grid"></div>
+        </article>
+        <article class="mechanism-card" data-step="3">
+          <span class="step">03</span><h3>Manipulate the candidate</h3>
+          <p>Selective consolidation reduced module drift but did not improve final accuracy.</p>
+          <div class="comparison" id="intervention-comparison"></div>
+        </article>
+      </div>
+      <div class="mechanism-conclusion">
+        <strong>Current inference</strong>
+        <p>Structured competition is expressed and causally engaged, but the tested static organization does not yet improve continual learning. Module redistribution is a mechanistic signature, not a sufficient cause of forgetting.</p>
+      </div>
+    </section>
+
+    <footer>All values are exported from repository result files. Confirmation and exploratory development evidence are never pooled.</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

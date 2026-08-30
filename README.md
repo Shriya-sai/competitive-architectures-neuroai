@@ -72,6 +72,35 @@ benefit: improved performance and improved biological alignment need not agree.
 - `notebooks/` — exploratory analysis only
 - `data/` — local-data instructions; datasets are never committed
 - `results/` — generated outputs; large artifacts are never committed
+- `ui/` — dependency-free interactive experiment atlas
+
+## Interactive experiment atlas
+
+The repository includes a static browser interface with three linked views:
+
+1. the exact standard, degree-preserving random-signed and structured-signed
+   interaction masks;
+2. experience-wise class retention for every frozen confirmation seed;
+3. exploratory pathway-engagement, representational-drift and selective-
+   consolidation results.
+
+Run it from the repository root:
+
+```bash
+python -m http.server 8000
+```
+
+Open `http://localhost:8000/ui/`. The committed 79 KB payload makes the atlas
+work immediately after cloning. After reproducing the local experiments,
+regenerate it with:
+
+```bash
+PYTHONPATH=src python scripts/export_neuroai_ui.py
+```
+
+The interface labels confirmatory and exploratory evidence separately and does
+not include uncommitted experiments. See [`ui/README.md`](ui/README.md) for its
+data contract.
 
 ## Development setup
 
