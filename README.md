@@ -47,18 +47,22 @@ sufficient cause of forgetting. Weighting protection by replay-memory
 consolidation avoided the final-accuracy cost of global freezing, but did not
 outperform the unregularized structured model.
 
-## Planned experimental comparison
+## Completed controlled comparison
 
-All conditions will share the same task, data, optimizer, training budget, and
-parameter budget as closely as possible:
+The initial experiment held the task, data, optimizer, training budget and
+parameter budget as closely matched as possible across:
 
 1. standard DNN;
 2. DNN with magnitude-matched random competition;
 3. DNN with structured competition.
 
-Primary computational endpoints will be frozen before training. RSA against
-brain data is a later stage and remains logically separate from computational
-benefit: improved performance and improved biological alignment need not agree.
+The computational endpoints were frozen before confirmation training. As
+reported above, structured topology did not reliably outperform the matched
+random signed control, and the subsequent bottleneck experiments established
+pathway engagement while exposing a stability--plasticity trade-off. RSA
+against brain data remains a later stage and is logically separate from
+computational benefit: improved performance and improved biological alignment
+need not agree.
 
 ## Repository map
 
